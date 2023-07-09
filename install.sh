@@ -5,28 +5,18 @@ read dsu_data
 echo "Partition Data is : $dsu_data GB" 
 
 echo "Do You Using SDCard? [y/n]"
-read is_sdcard_exists
-
-
-if [[ $is_sdcard_exists == y ]]
-then
-echo "SDCard is available [$is_sdcard_exists]"
-umount_sd=true  
-else
-  echo "SDCard is not available [$is_sdcard_exists]"
-  umount_sd=false
-fi
+read umount_sd
 
 # compress 
 echo "Compressing Image - Just Wait it need a time"
-gzip -c ./input_file/*.img > ./output_file/system_raw.gz
+7z a -tgzip ./output_file/system_raw.gz ./input_file/*.img
 
 # pushing compressed image to download folder
 echo "Copying Image to phone"
 adb push ./output_file/*.gz /storage/emulated/0/Download/
 
 # unmount sdcard
-if [[ $umount_sd == true ]]; then
+if [[ $umount_sd == y ]] || [[ $umount_sd == Y ]]; then
   SDCARD=$(adb shell sm list-volumes | grep -v null | grep public)
   if [[ $SDCARD == "" ]]; then
     echo "Unmount SD card option is enabled, but there is no sdcard detected, skipping.."
