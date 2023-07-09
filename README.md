@@ -1,5 +1,9 @@
 # GSI Installer via Dynamic System Update (DSU)
+Still On Trial And Error, Feel free to clone.
 
-I AM NOT RESPONSIBLE IF ANYTHING HAPPEN
+Requirements :  
+- 7z
+- Adb
 
-Working Over ADB
+Credit :  
+- VegaBobo
