@@ -1,13 +1,27 @@
 #!/bin/sh
 
-echo "How Much Data Partition You Need [GB]:"  
+if [[ $(7z | awk '/7-Zip/' | cut -b -5) == "7-Zip" ]]; then
+  echo "7z - OK"
+else
+  echo "7z is not installed"
+  return
+fi
+
+if [[ $(adb --version | awk '{ if($1 == "Android") print $0;}' | cut -b -7) == "Android" ]]; then
+  echo "Adb - OK"
+else
+  echo "Adb is not installed"
+  return
+fi
+
+echo "How Much Data Partition You Need [GB]:"
 read dsu_data
-echo "Partition Data is : $dsu_data GB" 
+echo "Partition Data is : $dsu_data GB"
 
 echo "Do You Using SDCard? [y/n]"
 read umount_sd
 
-# compress 
+# compress
 echo "Compressing Image - Just Wait it need a time"
 7z a -tgzip ./output_file/system_raw.gz ./input_file/*.img
 
@@ -32,11 +46,11 @@ adb shell setprop persist.sys.fflag.override.settings_dynamic_system true
 
 # invoke DSU activity
 adb shell am start-activity \
--n com.android.dynsystem/com.android.dynsystem.VerificationActivity  \
--a android.os.image.action.START_INSTALL  \
--d file:///storage/emulated/0/Download/system_raw.gz  \
---el KEY_SYSTEM_SIZE $(du -b ./input_file/*.img|cut -f1)  \
---el KEY_USERDATA_SIZE $(($dsu_data*1073741824))
+  -n com.android.dynsystem/com.android.dynsystem.VerificationActivity \
+  -a android.os.image.action.START_INSTALL \
+  -d file:///storage/emulated/0/Download/system_raw.gz \
+  --el KEY_SYSTEM_SIZE $(du -b ./input_file/*.img | cut -f1) \
+  --el KEY_USERDATA_SIZE $(($dsu_data * 1073741824))
 
 echo "DSU installation activity has been started!"
 
