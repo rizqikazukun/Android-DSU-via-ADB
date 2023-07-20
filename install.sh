@@ -1,10 +1,11 @@
 #!/bin/sh
-
 if [[ $(7z | awk '/7-Zip/' | cut -b -5) == "7-Zip" ]]; then
   echo "7z - OK"
+
+  return 0
 else
   echo "7z is not installed "
-  return
+  return 
 fi
 
 if [[ $(adb --version | awk '/Android/' | cut -b -7) == "Android" ]]; then
@@ -30,34 +31,6 @@ else
   echo "Just Input one image"
   return
 fi
-
-FolderInput=$(echo "./input_file/")
-FolderOutput=$(echo "./output_file/")
-FileName=$(ls -l ./input_file/*.img | cut -d '/' -f 3 | sed "s|.img||g")
-
-# Compressing Image
-if [[ $(ls -l $FolderOutput$FileName.gz | wc -l) != 1 ]]; then
-  # compress
-  echo "Compressing Image - Just Wait it need a time"
-  7z a -tgzip $FolderOutput$FileName.gz $FolderInput$FileName.img
-else
-  # pushing compressed image to download folder
-  CopiedImage=$(echo "/storage/emulated/0/Download/$FileName.gz")
-  if [[ $(adb shell ls $CopiedImage) == $CopiedImage ]]; then
-    $(startInstall)
-  else
-    echo "Copying Image to phone"
-    adb push $FolderOutput$FileName.gz /storage/emulated/0/Download/
-    $(startInstall)
-  fi
-fi
-
-# move to history
-his_folder=$(logname)-$(date '+%Y-%m-%d-%H-%M-%S')
-mkdir -p ./history/$his_folder
-mv ./input_file/* ./history/$his_folder/
-mv ./output_file/* ./history/$his_folder/
-
 
 
 startInstall() {
@@ -92,3 +65,33 @@ startInstall() {
     nohup $(sleep 60 && sm mount $SDCARD) >/dev/null 2>&1 &
   fi
 }
+
+FolderInput=$(echo "./input_file/")
+FolderOutput=$(echo "./output_file/")
+FileName=$(ls -l ./input_file/*.img | cut -d '/' -f 3 | sed "s|.img||g")
+
+# Compressing Image
+if [[ $(ls -l $FolderOutput$FileName.gz | wc -l) != 1 ]]; then
+  # compress
+  echo "Compressing Image - Just Wait it need a time"
+  7z a -tgzip $FolderOutput$FileName.gz $FolderInput$FileName.img
+else
+  # pushing compressed image to download folder
+  CopiedImage=$(echo "/storage/emulated/0/Download/$FileName.gz")
+  if [[ $(adb shell ls $CopiedImage) == $CopiedImage ]]; then
+    startInstall;
+  else
+    echo "Copying Image to phone"
+    adb push $FolderOutput$FileName.gz /storage/emulated/0/Download/
+    startInstall;
+  fi
+fi
+
+# move to history
+his_folder=$(logname)-$(date '+%Y-%m-%d-%H-%M-%S')
+mkdir -p ./history/$his_folder
+mv ./input_file/* ./history/$his_folder/
+mv ./output_file/* ./history/$his_folder/
+
+
+
