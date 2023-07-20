@@ -3,30 +3,79 @@ FolderInput=$(echo "./input_file/")
 FolderOutput=$(echo "./output_file/")
 FileName=$(ls -l ./input_file/*.img | cut -d '/' -f 3 | sed "s|.img||g")
 
-
-if [[ $(7z | awk '/7-Zip/' | cut -b -5) == "7-Zip" ]]; then
-  echo "7z - OK"
+# create process.log
+if [[ $(ls -l *.log | cut -d ' ' -f 9) == "" ]]; then
+  touch ./process.log
+  echo "Installation Proccess" >>./process.log
+  echo "$(date '+%Y%m%d%H%M%S') Attempt=1" >>./process.log
 else
-  echo "7z is not installed "
-  return 
+  Att=$(cat ./process.log | grep Attempt | sort -r | head -1 | cut -d ' ' -f 2 | cut -c 9)
+  let AttP=$Att+1
+  echo "$(date '+%Y%m%d%H%M%S') Attempt=$AttP" >>./process.log
 fi
 
-if [[ $(adb --version | awk '/Android/' | cut -b -7) == "Android" ]]; then
-  echo "Adb - OK"
+# Validation For Dependency
+# 7z
+if [[ $(7z | awk '/7-Zip/' | cut -b -5) == "7-Zip" ]]; then
+  echo "7z - OK"
+  echo "$(date '+%Y%m%d%H%M%S') 7z=1" >>./process.log
 else
-  echo "Adb is not installed"
+  echo "7z is not installed "
+  echo "$(date '+%Y%m%d%H%M%S') 7z=0" >>./process.log
   return
 fi
 
-echo "How Much Data Partition You Need [GB]:"
-read dsu_data
-echo "Partition Data is : $dsu_data GB"
+# Validation For Dependency
+# adb
+if [[ $(adb --version | awk '/Android/' | cut -b -7) == "Android" ]]; then
+  echo "Adb - OK"
+  echo "$(date '+%Y%m%d%H%M%S') Adb=1" >>./process.log
+else
+  echo "Adb is not installed"
+  echo "$(date '+%Y%m%d%H%M%S') Adb=0" >>./process.log
+  return
+fi
 
-echo "Do You Using SDCard? [y/n]"
-read umount_sd
+# Validation for Input file
+if [[ $(ls -l ./input_file/*.img | cut -d ' ' -f 10 | wc -l) == 1 ]]; then
+  echo "Image OK"
+  echo "$(date '+%Y%m%d%H%M%S') Img=1" >>./process.log
+  echo "$(date '+%Y%m%d%H%M%S') ImgCount=$(ls -l ./input_file/*.img | cut -d ' ' -f 10 | wc -l)" >>./process.log
+else
+  echo "Error"
+  echo "There is Nothing or There are more than one image"
+  echo "Just Input one image"
+  echo "$(date '+%Y%m%d%H%M%S') Img=0" >>./process.log
+  echo "$(date '+%Y%m%d%H%M%S') ImgCount=$(ls -l ./input_file/*.img | cut -d ' ' -f 10 | wc -l)" >>./process.log
+  return
+fi
+
+# Question for dsu user data partition size
+if [[ $(cat ./process.log | grep DataPartition | sort -r | head -1 | cut -d '=' -f 2) == "" ]]; then
+  echo "How Much Data Partition You Need [GB]:"
+  read dsu_data
+  echo "Partition Data is : $dsu_data GB"
+  echo "$(date '+%Y%m%d%H%M%S') DataPartition=$dsu_data" >>./process.log
+else
+  dsu_data=$(cat ./process.log | grep DataPartition | sort -r | head -1 | cut -d '=' -f 2)
+  echo "Partition Data is : $dsu_data GB"
+  echo "$(date '+%Y%m%d%H%M%S') DataPartition=$dsu_data" >>./process.log
+fi
+
+# Question for sdcard Options
+if [[ $(cat ./process.log | grep SDCard | sort -r | head -1 | cut -d '=' -f 2) == "" ]]; then
+  echo "Do You Using SDCard? [y/n]"
+  read umount_sd
+  echo "$(date '+%Y%m%d%H%M%S') SDCard=$umount_sd" >>./process.log
+  echo "Sdcard Options is : $umount_sd"
+else
+  umount_sd=$(cat ./process.log | grep SDCard | sort -r | head -1 | cut -d '=' -f 2)
+   echo "$(date '+%Y%m%d%H%M%S') SDCard=$umount_sd" >>./process.log
+  echo "Sdcard Options is : $umount_sd"
+fi
 
 startInstall() {
-  
+
   # unmount sdcard
   if [[ $umount_sd == y ]] || [[ $umount_sd == Y ]]; then
     SDCARD=$(adb shell sm list-volumes | grep -v null | grep public)
@@ -59,16 +108,6 @@ startInstall() {
   fi
 }
 
-# Validation for Imput file
-if [[ $(ls -l ./input_file/*.img | cut -d ' ' -f 10 | wc -l) == 1 ]]; then
-  echo "Image OK"
-else
-  echo "Error"
-  echo "There is Nothing or There are more than one image"
-  echo "Just Input one image"
-  return
-fi
-
 # Compressing Image
 if [[ $(ls -l $FolderOutput$FileName.gz | wc -l) != 1 ]]; then
   # compress
@@ -78,11 +117,11 @@ else
   # pushing compressed image to download folder
   CopiedImage=$(echo "/storage/emulated/0/Download/$FileName.gz")
   if [[ $(adb shell ls $CopiedImage) == $CopiedImage ]]; then
-    startInstall;
+    startInstall
   else
     echo "Copying Image to phone"
     adb push $FolderOutput$FileName.gz /storage/emulated/0/Download/
-    startInstall;
+    startInstall
   fi
 fi
 
@@ -91,6 +130,3 @@ his_folder=$(logname)-$(date '+%Y-%m-%d-%H-%M-%S')
 mkdir -p ./history/$his_folder
 mv ./input_file/* ./history/$his_folder/
 mv ./output_file/* ./history/$his_folder/
-
-
-
