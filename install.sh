@@ -1,8 +1,11 @@
 #!/bin/sh
+FolderInput=$(echo "./input_file/")
+FolderOutput=$(echo "./output_file/")
+FileName=$(ls -l ./input_file/*.img | cut -d '/' -f 3 | sed "s|.img||g")
+
+
 if [[ $(7z | awk '/7-Zip/' | cut -b -5) == "7-Zip" ]]; then
   echo "7z - OK"
-
-  return 0
 else
   echo "7z is not installed "
   return 
@@ -22,18 +25,8 @@ echo "Partition Data is : $dsu_data GB"
 echo "Do You Using SDCard? [y/n]"
 read umount_sd
 
-# Validation for Imput file
-if [[ $(ls -l ./input_file/*.img | cut -d ' ' -f 10 | wc -l) == 1 ]]; then
-  echo "Image OK"
-else
-  echo "Error"
-  echo "There is Nothing or There are more than one image"
-  echo "Just Input one image"
-  return
-fi
-
-
 startInstall() {
+  
   # unmount sdcard
   if [[ $umount_sd == y ]] || [[ $umount_sd == Y ]]; then
     SDCARD=$(adb shell sm list-volumes | grep -v null | grep public)
@@ -66,9 +59,15 @@ startInstall() {
   fi
 }
 
-FolderInput=$(echo "./input_file/")
-FolderOutput=$(echo "./output_file/")
-FileName=$(ls -l ./input_file/*.img | cut -d '/' -f 3 | sed "s|.img||g")
+# Validation for Imput file
+if [[ $(ls -l ./input_file/*.img | cut -d ' ' -f 10 | wc -l) == 1 ]]; then
+  echo "Image OK"
+else
+  echo "Error"
+  echo "There is Nothing or There are more than one image"
+  echo "Just Input one image"
+  return
+fi
 
 # Compressing Image
 if [[ $(ls -l $FolderOutput$FileName.gz | wc -l) != 1 ]]; then
