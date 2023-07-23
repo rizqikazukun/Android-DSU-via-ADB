@@ -111,28 +111,43 @@ startInstall() {
   fi
 }
 
+# move to history
+moveToHistory(){
+his_folder=$(logname)-$(date '+%Y-%m-%d-%H-%M-%S')
+mkdir -p ./history/$his_folder
+mv ./input_file/* ./history/$his_folder/
+mv ./output_file/* ./history/$his_folder/
+mv *.log ./history/$his_folder/
+}
+
+# Function for copying image
+copyingImage() {
+  CopiedImage=$(echo "/storage/emulated/0/Download/$FileName.gz")
+  if [[ $(adb shell ls $CopiedImage) == $CopiedImage ]]; then
+    echo "$(date '+%Y%m%d%H%M%S') Image copied, then start install.." >>./process.log
+    startInstall
+    moveToHistory
+  else
+    echo "Copying Image to phone"
+    echo "$(date '+%Y%m%d%H%M%S') Copying image first, then start install.." >>./process.log
+    adb push $FolderOutput$FileName.gz /storage/emulated/0/Download/
+    startInstall
+    moveToHistory
+  fi
+}
+
 # Compressing Image
 if [[ $(ls -l $FolderOutput$FileName.gz | wc -l) != 1 ]]; then
   # compress
   echo "Compressing Image - Just Wait it need a time"
   echo "$(date '+%Y%m%d%H%M%S') Compressing Image - Just Wait it need a time" >>./process.log
   7z a -tgzip $FolderOutput$FileName.gz $FolderInput$FileName.img
+  copyingImage
 else
   # pushing compressed image to download folder
-  CopiedImage=$(echo "/storage/emulated/0/Download/$FileName.gz")
-  if [[ $(adb shell ls $CopiedImage) == $CopiedImage ]]; then
-    echo "$(date '+%Y%m%d%H%M%S') Image copied, then start install.." >>./process.log
-    startInstall
-  else
-    echo "Copying Image to phone"
-    echo "$(date '+%Y%m%d%H%M%S') Copying image first, then start install.." >>./process.log
-    adb push $FolderOutput$FileName.gz /storage/emulated/0/Download/
-    startInstall
-  fi
+  copyingImage
 fi
 
-# move to history
-his_folder=$(logname)-$(date '+%Y-%m-%d-%H-%M-%S')
-mkdir -p ./history/$his_folder
-mv ./input_file/* ./history/$his_folder/
-mv ./output_file/* ./history/$his_folder/
+
+
+
