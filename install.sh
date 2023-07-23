@@ -70,7 +70,7 @@ if [[ $(cat ./process.log | grep SDCard | sort -r | head -1 | cut -d '=' -f 2) =
   echo "Sdcard Options is : $umount_sd"
 else
   umount_sd=$(cat ./process.log | grep SDCard | sort -r | head -1 | cut -d '=' -f 2)
-   echo "$(date '+%Y%m%d%H%M%S') SDCard=$umount_sd" >>./process.log
+  echo "$(date '+%Y%m%d%H%M%S') SDCard=$umount_sd" >>./process.log
   echo "Sdcard Options is : $umount_sd"
 fi
 
@@ -81,9 +81,11 @@ startInstall() {
     SDCARD=$(adb shell sm list-volumes | grep -v null | grep public)
     if [[ $SDCARD == "" ]]; then
       echo "Unmount SD card option is enabled, but there is no sdcard detected, skipping.."
+      echo "$(date '+%Y%m%d%H%M%S') Unmount SD card option is enabled, but there is no sdcard detected, skipping.." >>./process.log
       umount_sd=false
     else
       echo "Unmount SD card option is enabled, sdcard will be ejected temporary, preventing DSU allocation on SD.."
+      echo "$(date '+%Y%m%d%H%M%S') Unmount SD card option is enabled, sdcard will be ejected temporary, preventing DSU allocation on SD.." >>./process.log
       sm unmount $SDCARD
     fi
   fi
@@ -104,6 +106,7 @@ startInstall() {
   # remount sdcard
   if [[ $umount_sd == true ]]; then
     echo "Remounting sdcard in 60 secs.."
+    echo "$(date '+%Y%m%d%H%M%S') Remounting sdcard in 60 secs.." >>./process.log
     nohup $(sleep 60 && sm mount $SDCARD) >/dev/null 2>&1 &
   fi
 }
@@ -112,14 +115,17 @@ startInstall() {
 if [[ $(ls -l $FolderOutput$FileName.gz | wc -l) != 1 ]]; then
   # compress
   echo "Compressing Image - Just Wait it need a time"
+  echo "$(date '+%Y%m%d%H%M%S') Compressing Image - Just Wait it need a time" >>./process.log
   7z a -tgzip $FolderOutput$FileName.gz $FolderInput$FileName.img
 else
   # pushing compressed image to download folder
   CopiedImage=$(echo "/storage/emulated/0/Download/$FileName.gz")
   if [[ $(adb shell ls $CopiedImage) == $CopiedImage ]]; then
+    echo "$(date '+%Y%m%d%H%M%S') Image copied, then start install.." >>./process.log
     startInstall
   else
     echo "Copying Image to phone"
+    echo "$(date '+%Y%m%d%H%M%S') Copying image first, then start install.." >>./process.log
     adb push $FolderOutput$FileName.gz /storage/emulated/0/Download/
     startInstall
   fi
